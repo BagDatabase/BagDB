@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Filter, Info, Upload, X, Check, ChevronDown, Package, Shield, ExternalLink, Menu, SlidersHorizontal } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 // --- CSV Parser Utility ---
 function parseCSV(text) {
@@ -929,6 +930,7 @@ export default function App() {
         </div>
       )}
 
+      <Analytics />
     </div>
   );
 }
