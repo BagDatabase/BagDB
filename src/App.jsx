@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Filter, Info, Upload, X, Check, ChevronDown, Package, Shield, ExternalLink, Menu, SlidersHorizontal } from 'lucide-react';
-import { Analytics } from '@vercel/analytics/react'; // <-- Add it right here!
+import { Analytics } from '@vercel/analytics/react';
 
 // --- CSV Parser Utility ---
 function parseCSV(text) {
@@ -381,30 +381,34 @@ export default function App() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredData.map((bag, idx) => {
             const features = [];
-            
-            const orgSlots = getNum(bag['Org Slots/Pockets']);
-            if (orgSlots > 0 || checkYesNo(bag['Org Slots/Pockets'], 'Yes')) {
-               features.push('Tech Org');
-            }
-            
-            if (checkYesNo(bag['Sternum Strap'], 'Yes')) features.push('Sternum Strap');
-            const handles = getNum(bag['Handles']);
-            if (handles > 0) features.push(`${handles} Handle${handles > 1 ? 's' : ''}`);
-            const lash = getNum(bag['Lash Points (outside)']);
-            if (lash > 0) features.push(`${lash} Lash Point${lash > 1 ? 's' : ''}`);
-            
-            const compStr = (bag['Compression Straps'] || '').toLowerCase();
-            if (compStr !== 'no' && compStr !== '0' && compStr !== '') {
-              const numMatch = compStr.match(/\d+/);
-              if (numMatch) {
-                features.push(`${numMatch[0]} Compression Strap${numMatch[0] !== '1' ? 's' : ''}`);
-              } else {
-                features.push('Compression Straps');
+            const isSling = (bag.Type || '').toLowerCase() === 'sling';
+            const isPouch = (bag.Type || '').toLowerCase() === 'pouch';
+            const deviceTerm = isSling ? 'Device' : 'Laptop';
+
+            if (isPouch) {
+              const handles = getNum(bag['Handles']);
+              if (handles > 0) features.push(`${handles} Handle${handles > 1 ? 's' : ''}`);
+            } else {
+              const orgSlots = getNum(bag['Org Slots/Pockets']);
+              if (orgSlots > 0 || checkYesNo(bag['Org Slots/Pockets'], 'Yes')) {
+                 features.push('Tech Org');
+              }
+              if (checkYesNo(bag['Sternum Strap'], 'Yes')) features.push('Sternum Strap');
+              const handles = getNum(bag['Handles']);
+              if (handles > 0) features.push(`${handles} Handle${handles > 1 ? 's' : ''}`);
+              const lash = getNum(bag['Lash Points (outside)']);
+              if (lash > 0) features.push(`${lash} Lash Point${lash > 1 ? 's' : ''}`);
+              
+              const compStr = (bag['Compression Straps'] || '').toLowerCase();
+              if (compStr !== 'no' && compStr !== '0' && compStr !== '') {
+                const numMatch = compStr.match(/\d+/);
+                if (numMatch) {
+                  features.push(`${numMatch[0]} Compression Strap${numMatch[0] !== '1' ? 's' : ''}`);
+                } else {
+                  features.push('Compression Straps');
+                }
               }
             }
-
-            const isSling = (bag.Type || '').toLowerCase() === 'sling';
-            const deviceTerm = isSling ? 'Device' : 'Laptop';
 
             const warrantyText = bag['Warranty'] || 'No';
             const isLifetime = warrantyText.toLowerCase().includes('lifetime');
@@ -449,7 +453,7 @@ export default function App() {
                       <span className="text-slate-700 text-right">{bag['Weight (lbs)']} lbs</span>
                     </p>
                     
-                    {!isSling && (
+                    {!isSling && !isPouch && (
                       <p className="flex justify-between items-start text-left gap-2">
                         <span className="text-slate-400 whitespace-nowrap">Opening:</span> 
                         <span className="text-slate-700 text-right">{bag['Bag Style Opening']}</span>
@@ -461,20 +465,24 @@ export default function App() {
                       <span className="text-slate-700 text-right">{bag['Height (inches)']}″H x {bag['Width (inches)']}″W x {bag['Depth (inches)']}″D</span>
                     </p>
                     
-                    <p className="flex justify-between items-start text-left gap-2">
-                      <span className="text-slate-400 whitespace-nowrap">{deviceTerm}:</span> 
-                      <span className="text-slate-700 text-right">Max {bag['Max. Laptop Size (in)']}″ {bag['Laptop Access'] ? `/ ${bag['Laptop Access']}` : ''}</span>
-                    </p>
+                    {!isPouch && (
+                      <p className="flex justify-between items-start text-left gap-2">
+                        <span className="text-slate-400 whitespace-nowrap">{deviceTerm}:</span> 
+                        <span className="text-slate-700 text-right">Max {bag['Max. Laptop Size (in)']}″ {bag['Laptop Access'] ? `/ ${bag['Laptop Access']}` : ''}</span>
+                      </p>
+                    )}
                     
                     <p className="flex justify-between items-start text-left gap-2">
-                      <span className="text-slate-400 whitespace-nowrap">QAP:</span> 
-                      <span className="text-slate-700 text-right">{bag['Quick Access Pocket (#)']} ({bag['QAP Location'] || 'None'})</span>
+                      <span className="text-slate-400 whitespace-nowrap">{isPouch ? 'Organisation Pockets/Slots:' : 'QAP:'}</span> 
+                      <span className="text-slate-700 text-right">{bag['Quick Access Pocket (#)']} {!isPouch && `(${bag['QAP Location'] || 'None'})`}</span>
                     </p>
 
-                    <p className="flex justify-between items-start text-left gap-2">
-                      <span className="text-slate-400 whitespace-nowrap">WBP:</span> 
-                      <span className="text-slate-700 text-right">{bag['Water Bottle Pockets (#)']}</span>
-                    </p>
+                    {!isPouch && (
+                      <p className="flex justify-between items-start text-left gap-2">
+                        <span className="text-slate-400 whitespace-nowrap">WBP:</span> 
+                        <span className="text-slate-700 text-right">{bag['Water Bottle Pockets (#)']}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div className="pt-3 mt-3 border-t border-slate-200 text-slate-500 leading-relaxed text-left text-xs">
@@ -498,15 +506,15 @@ export default function App() {
 
   const renderMaterialAging = () => (
     <main className="max-w-4xl mx-auto px-4 py-12">
-      <h2 className="text-3xl font-bold mb-6 text-slate-900 text-left">MATERIAL AGING PROCESS <span className="text-slate-400 font-medium text-xl ml-2">(ULTRA, ZIPPERS etc.)</span></h2>
-      <p className="text-slate-700 mb-10 text-lg leading-relaxed bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
+      <h2 className="text-2xl font-bold mb-6 text-slate-900 text-left">MATERIAL AGING PROCESS <span className="text-slate-400 font-medium text-lg ml-2">(ULTRA, ZIPPERS etc.)</span></h2>
+      <p className="text-slate-700 mb-10 text-sm leading-relaxed bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
         X-Pac and Ultra aging process will create crinkles/grid pattern, Ecopak bumps in the fabric over time, some times quicker, some times slower. These materials will also be affected by delamination, just like aquaguard / TPU-coated zippers.
       </p>
 
       <div className="space-y-12 text-left">
         <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-2xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Ultra / X-PAC Crinkles</h3>
-          <p className="text-slate-600 mb-6 leading-relaxed">
+          <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Ultra / X-PAC Crinkles</h3>
+          <p className="text-slate-600 mb-4 text-sm leading-relaxed">
             The images below are from <a href="https://www.reddit.com/r/ManyBaggers/s/Ntqqla931V" target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">Reddit</a> and <a href="https://www.reddit.com/r/ManyBaggers/s/IhI3VbBXVv" target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">here</a>, first one is the AER CPP2 Ultra after 2 months of use, the 2nd one is the Able Carry Daily Plus VX21.
           </p>
           <div className="grid sm:grid-cols-2 gap-6">
@@ -522,24 +530,24 @@ export default function App() {
         </section>
 
         <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-2xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Delamination</h3>
-          <p className="text-slate-600 mb-6 leading-relaxed">
+          <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Delamination</h3>
+          <p className="text-slate-600 mb-4 text-sm leading-relaxed">
             Ultra can also be affected by some extreme delamination, see video here: <a href="https://youtu.be/XsR2vojl7sk?feature=shared" target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline break-all">https://youtu.be/XsR2vojl7sk?feature=shared</a>
           </p>
           <img src="ultra.jpeg" onError={(e) => { e.target.src = "ultra.jpg"; e.target.onerror = null; }} alt="Ultra Delamination" className="rounded-lg border border-slate-200 w-full object-contain bg-slate-50 max-h-[500px]" />
         </section>
 
         <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-2xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Ecopak Bumps</h3>
-          <p className="text-slate-600 mb-6 leading-relaxed">
+          <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Ecopak Bumps</h3>
+          <p className="text-slate-600 mb-4 text-sm leading-relaxed">
             Ecopak developing bumps, from <a href="https://www.reddit.com/r/ManyBaggers/s/GffjRNTrwr" target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">Reddit</a>:
           </p>
           <img src="ecopakbumps.jpeg" onError={(e) => { e.target.src = "ecopakbumps.jpg"; e.target.onerror = null; }} alt="Ecopak Bumps" className="rounded-lg border border-slate-200 w-full object-contain bg-slate-50 max-h-[500px]" />
         </section>
 
         <section className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-2xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Aquaguard Zipper Delamination</h3>
-          <p className="text-slate-600 mb-6 leading-relaxed">
+          <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Aquaguard Zipper Delamination</h3>
+          <p className="text-slate-600 mb-4 text-sm leading-relaxed">
             While Aquaguard / TPU-coated zippers look sleek and nice out the box, they are also prone to delaminate. Picture below from <a href="https://www.reddit.com/r/ManyBaggers/comments/1ld14by/aquaguard_zippers_peeling_aer_tp3/" target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline font-medium">Reddit</a> of the aquaguard zippers on a AER TP3.
           </p>
           <img src="aquaguardzippers.jpeg" onError={(e) => { e.target.src = "aquaguardzippers.jpg"; e.target.onerror = null; }} alt="Aquaguard Zipper Delamination" className="rounded-lg border border-slate-200 w-full object-contain bg-slate-50 max-h-[500px]" />
@@ -709,66 +717,144 @@ export default function App() {
                 <label className="text-sm font-medium text-slate-700 block mb-1 text-left w-full">Brand & Name</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. Mystery Ranch"
+                  placeholder="e.g. AER, Evergoods, Goruck"
                   value={filters.brandName}
                   onChange={(e) => setFilters({...filters, brandName: e.target.value})}
                   className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
-              {/* Sliders (Min/Max Ranges) */}
-              <div className="pt-4 border-t border-slate-100">
-                <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
-                <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
-                <RangeFilter label="Max. Laptop Size" min={0} max={20} value={filters.laptopSize} onChange={(v) => setFilters({...filters, laptopSize: v})} unit="in" />
-              </div>
+              {activeTab === 'Backpack' && (
+                <>
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
+                    <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
+                    <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
+                    <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
+                    <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 block mb-1 text-left w-full">Material</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Cordura, Nylon"
+                        value={filters.material}
+                        onChange={(e) => setFilters({...filters, material: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Max. Laptop Size" min={0} max={20} value={filters.laptopSize} onChange={(v) => setFilters({...filters, laptopSize: v})} unit="in" />
+                    <MultiSelectDropdown label="Laptop Access" options={options.laptopAccess} selected={filters.laptopAccess} onChange={(v) => setFilters({...filters, laptopAccess: v})} />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <MultiSelectDropdown label="Bag Style Opening" options={options.openingStyle} selected={filters.openingStyle} onChange={(v) => setFilters({...filters, openingStyle: v})} />
+                    <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
+                    <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
+                    <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
+                    <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RadioGroup label="Luggage Pass Through" options={['All', 'Yes', 'No']} selected={filters.luggagePass} onChange={(v) => setFilters({...filters, luggagePass: v})} />
+                    <RadioGroup label="Compression Straps" options={['All', 'Yes', 'No']} selected={filters.compression} onChange={(v) => setFilters({...filters, compression: v})} />
+                    <RadioGroup label="Load Lifters" options={['All', 'Yes', 'No']} selected={filters.loadLifters} onChange={(v) => setFilters({...filters, loadLifters: v})} />
+                    <RadioGroup label="Sternum Strap" options={['All', 'Yes', 'No']} selected={filters.sternum} onChange={(v) => setFilters({...filters, sternum: v})} />
+                    <RadioGroup label="Expandable" options={['All', 'Yes', 'No']} selected={filters.expandable} onChange={(v) => setFilters({...filters, expandable: v})} />
+                    <RadioGroup label="Packable" options={['All', 'Yes', 'No']} selected={filters.packable} onChange={(v) => setFilters({...filters, packable: v})} />
+                    <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
+                    <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
+                  </div>
+                </>
+              )}
 
-              {/* Checkboxes / Dropdowns */}
-              <div className="pt-4 border-t border-slate-100">
-                <MultiSelectDropdown label="Laptop Access" options={options.laptopAccess} selected={filters.laptopAccess} onChange={(v) => setFilters({...filters, laptopAccess: v})} />
-                
-                <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
-                <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
-                
-                <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
-                
-                <MultiSelectDropdown label="Bag Style Opening" options={options.openingStyle} selected={filters.openingStyle} onChange={(v) => setFilters({...filters, openingStyle: v})} />
-                
-                <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
-              </div>
+              {activeTab === 'Sling' && (
+                <>
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
+                    <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
+                    <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
+                    <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
+                    <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 block mb-1 text-left w-full">Material</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Cordura, Nylon"
+                        value={filters.material}
+                        onChange={(e) => setFilters({...filters, material: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Max. Device Size" min={0} max={20} value={filters.laptopSize} onChange={(v) => setFilters({...filters, laptopSize: v})} unit="in" />
+                    <MultiSelectDropdown label="Device Access" options={options.laptopAccess} selected={filters.laptopAccess} onChange={(v) => setFilters({...filters, laptopAccess: v})} />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
+                    <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
+                    <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
+                    <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RadioGroup label="Compression Straps" options={['All', 'Yes', 'No']} selected={filters.compression} onChange={(v) => setFilters({...filters, compression: v})} />
+                    <RadioGroup label="Expandable" options={['All', 'Yes', 'No']} selected={filters.expandable} onChange={(v) => setFilters({...filters, expandable: v})} />
+                    <RadioGroup label="Packable" options={['All', 'Yes', 'No']} selected={filters.packable} onChange={(v) => setFilters({...filters, packable: v})} />
+                    <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
+                    <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
+                  </div>
+                </>
+              )}
 
-              {/* Yes/No/All Radios */}
-              <div className="pt-4 border-t border-slate-100">
-                <RadioGroup label="Luggage Pass Through" options={['All', 'Yes', 'No']} selected={filters.luggagePass} onChange={(v) => setFilters({...filters, luggagePass: v})} />
-                <RadioGroup label="Compression Straps" options={['All', 'Yes', 'No']} selected={filters.compression} onChange={(v) => setFilters({...filters, compression: v})} />
-                <RadioGroup label="Load Lifters" options={['All', 'Yes', 'No']} selected={filters.loadLifters} onChange={(v) => setFilters({...filters, loadLifters: v})} />
-                <RadioGroup label="Sternum Strap" options={['All', 'Yes', 'No']} selected={filters.sternum} onChange={(v) => setFilters({...filters, sternum: v})} />
-                <RadioGroup label="Expandable" options={['All', 'Yes', 'No']} selected={filters.expandable} onChange={(v) => setFilters({...filters, expandable: v})} />
-                <RadioGroup label="Packable" options={['All', 'Yes', 'No']} selected={filters.packable} onChange={(v) => setFilters({...filters, packable: v})} />
-              </div>
-
-              {/* Details Ranges */}
-              <div className="pt-4 border-t border-slate-100">
-                <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-1 text-left w-full">Material</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Cordura, Nylon"
-                    value={filters.material}
-                    onChange={(e) => setFilters({...filters, material: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-                
-                <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
-                
-                <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
-                <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
-                <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
-                <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
-                
-                <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
-              </div>
+              {activeTab === 'Pouch' && (
+                <>
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
+                    <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
+                    <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                    <RangeFilter label="Organisation Pockets/Slots" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
+                    <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
+                    <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
+                    
+                    <div className="mt-4">
+                      <label className="text-sm font-medium text-slate-700 block mb-1 text-left w-full">Material</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Cordura, Nylon"
+                        value={filters.material}
+                        onChange={(e) => setFilters({...filters, material: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
+                    <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
+                  </div>
+                </>
+              )}
             </div>
             
             <div className="p-4 border-t border-slate-200 bg-white grid grid-cols-2 gap-3">
@@ -841,21 +927,32 @@ export default function App() {
                     <span className="font-medium text-slate-900">{selectedBag['Height (inches)']}″ x {selectedBag['Width (inches)']}″ x {selectedBag['Depth (inches)']}″</span>
                   </div>
                   
-                  {((selectedBag.Type || '').toLowerCase() !== 'sling') && (
+                  {((selectedBag.Type || '').toLowerCase() !== 'sling' && (selectedBag.Type || '').toLowerCase() !== 'pouch') && (
                     <div className="border-b border-slate-200 pb-2">
                       <span className="text-slate-500 block text-xs">Bag Style Opening</span>
                       <span className="font-medium text-slate-900">{selectedBag['Bag Style Opening']}</span>
                     </div>
                   )}
 
+                  {((selectedBag.Type || '').toLowerCase() !== 'pouch') && (
+                    <div className="border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 block text-xs">Max {(selectedBag.Type || '').toLowerCase() === 'sling' ? 'Device' : 'Laptop'} / Access</span>
+                      <span className="font-medium text-slate-900">{selectedBag['Max. Laptop Size (in)']}″ {selectedBag['Laptop Access'] ? `/ ${selectedBag['Laptop Access']}` : ''}</span>
+                    </div>
+                  )}
+                  
                   <div className="border-b border-slate-200 pb-2">
-                    <span className="text-slate-500 block text-xs">Max {(selectedBag.Type || '').toLowerCase() === 'sling' ? 'Device' : 'Laptop'} / Access</span>
-                    <span className="font-medium text-slate-900">{selectedBag['Max. Laptop Size (in)']}″ {selectedBag['Laptop Access'] ? `/ ${selectedBag['Laptop Access']}` : ''}</span>
+                    <span className="text-slate-500 block text-xs">{((selectedBag.Type || '').toLowerCase() === 'pouch') ? 'Organisation Pockets/Slots' : 'QAP Count'}</span>
+                    <span className="font-medium text-slate-900">{selectedBag['Quick Access Pocket (#)']} {((selectedBag.Type || '').toLowerCase() !== 'pouch') && `(${selectedBag['QAP Location'] || 'None'})`}</span>
                   </div>
-                  <div className="border-b border-slate-200 pb-2">
-                    <span className="text-slate-500 block text-xs">QAP / WBP Count</span>
-                    <span className="font-medium text-slate-900">{selectedBag['Quick Access Pocket (#)']} QAPs / {selectedBag['Water Bottle Pockets (#)']} WBPs</span>
-                  </div>
+
+                  {((selectedBag.Type || '').toLowerCase() !== 'pouch') && (
+                    <div className="border-b border-slate-200 pb-2">
+                      <span className="text-slate-500 block text-xs">WBP Count</span>
+                      <span className="font-medium text-slate-900">{selectedBag['Water Bottle Pockets (#)']}</span>
+                    </div>
+                  )}
+                  
                   <div className="border-b border-slate-200 pb-2">
                     <span className="text-slate-500 block text-xs">Material</span>
                     <span className="font-medium text-slate-900">{selectedBag['Material'] || 'Not specified'}</span>
@@ -905,12 +1002,13 @@ export default function App() {
               </button>
             </div>
             
-            <p className="font-semibold text-slate-900 mb-4 text-left">
+            <p className="font-semibold text-slate-900 mb-2 text-left">
               Welcome to my random backpack, sling and pouch database! Hope it helps someone.
             </p>
-
+            <br />
+            
             <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700 mb-6 text-left">
-              <li>Currency is in USD, dimensions are in inches, weight in LBS for consistency.</li>
+              <li>For consistency, currency is in USD, dimensions are in inches, weight in LBS.</li>
               <li>Mostly the lightest available colour was used for improved visibility of its features on this website.</li>
             </ul>
 
@@ -921,7 +1019,6 @@ export default function App() {
             <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700 text-left">
               <li><strong className="text-slate-900 font-semibold inline-block w-24">QAP</strong> Quick Access Pocket</li>
               <li><strong className="text-slate-900 font-semibold inline-block w-24">WBP</strong> Water Bottle Pocket</li>
-              <li><strong className="text-slate-900 font-semibold inline-block w-24">Liters</strong> Volume capacity of the bag</li>
               <li><strong className="text-slate-900 font-semibold inline-block w-24">Org</strong> Organization (Slots or Pockets)</li>
               <li><strong className="text-slate-900 font-semibold inline-block w-24">Lash points</strong> External points to tie down gear</li>
             </ul>
@@ -929,7 +1026,8 @@ export default function App() {
           </div>
         </div>
       )}
-	{/* ADD THE ANALYTICS TAG RIGHT HERE: */}
+
+      {/* Uncomment the following line when deploying to Vercel */}
       <Analytics />
     </div>
   );
