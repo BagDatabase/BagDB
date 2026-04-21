@@ -62,26 +62,32 @@ const RangeFilter = ({ label, min, max, value, onChange, unit = "" }) => (
     <div className="flex justify-between items-center mb-1">
       <label className="text-sm font-medium text-slate-700 text-left">{label}</label>
       <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">
-        {value.min} - {value.max} {unit}
+        {value.min === '' ? min : value.min} - {value.max === '' ? max : value.max} {unit}
       </span>
     </div>
     <div className="flex gap-2 items-center">
       <input
         type="number"
         min={min}
-        max={value.max}
+        max={value.max === '' ? max : value.max}
         value={value.min}
-        onChange={(e) => onChange({ ...value, min: Number(e.target.value) })}
+        onChange={(e) => {
+          const val = e.target.value;
+          onChange({ ...value, min: val === '' ? '' : Number(val) });
+        }}
         className="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         placeholder="Min"
       />
       <span className="text-slate-400">-</span>
       <input
         type="number"
-        min={value.min}
+        min={value.min === '' ? min : value.min}
         max={max}
         value={value.max}
-        onChange={(e) => onChange({ ...value, max: Number(e.target.value) })}
+        onChange={(e) => {
+          const val = e.target.value;
+          onChange({ ...value, max: val === '' ? '' : Number(val) });
+        }}
         className="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none"
         placeholder="Max"
       />
@@ -289,6 +295,13 @@ export default function App() {
     return isNaN(num) ? 0 : num;
   };
 
+  // Helper to allow clear input (empty string) values in filters gracefully
+  const checkRange = (val, range) => {
+    const min = range.min === '' ? 0 : range.min;
+    const max = range.max === '' ? Infinity : range.max;
+    return val >= min && val <= max;
+  };
+
   // Apply Filters
   const filteredData = useMemo(() => {
     return data.filter(bag => {
@@ -306,34 +319,34 @@ export default function App() {
       if (filters.material && !(bag['Material'] || '').toLowerCase().includes(filters.material.toLowerCase())) return false;
 
       const vol = getNum(bag['Volume (liters)']);
-      if (vol < filters.volume.min || vol > filters.volume.max) return false;
+      if (!checkRange(vol, filters.volume)) return false;
 
       const price = getNum(bag['Price (USD)']);
-      if (price < filters.price.min || price > filters.price.max) return false;
+      if (!checkRange(price, filters.price)) return false;
 
       const lapSize = getNum(bag['Max. Laptop Size (in)']);
-      if (lapSize > 0 && (lapSize < filters.laptopSize.min || lapSize > filters.laptopSize.max)) return false;
+      if (lapSize > 0 && !checkRange(lapSize, filters.laptopSize)) return false;
 
       const qapNum = getNum(bag['Quick Access Pocket (#)']);
-      if (qapNum < filters.qap.min || qapNum > filters.qap.max) return false;
+      if (!checkRange(qapNum, filters.qap)) return false;
 
       const wbpNum = getNum(bag['Water Bottle Pockets (#)']);
-      if (wbpNum < filters.wbp.min || wbpNum > filters.wbp.max) return false;
+      if (!checkRange(wbpNum, filters.wbp)) return false;
 
       const orgSlots = getNum(bag['Org Slots/Pockets']);
-      if (orgSlots < filters.orgSlots.min || orgSlots > filters.orgSlots.max) return false;
+      if (!checkRange(orgSlots, filters.orgSlots)) return false;
 
       const weight = getNum(bag['Weight (lbs)']);
-      if (weight < filters.weight.min || weight > filters.weight.max) return false;
+      if (!checkRange(weight, filters.weight)) return false;
 
       const h = getNum(bag['Height (inches)']);
-      if (h < filters.height.min || h > filters.height.max) return false;
+      if (!checkRange(h, filters.height)) return false;
 
       const w = getNum(bag['Width (inches)']);
-      if (w < filters.width.min || w > filters.width.max) return false;
+      if (!checkRange(w, filters.width)) return false;
 
       const d = getNum(bag['Depth (inches)']);
-      if (d < filters.depth.min || d > filters.depth.max) return false;
+      if (!checkRange(d, filters.depth)) return false;
 
       if (filters.laptopAccess.length > 0 && !filters.laptopAccess.some(a => (bag['Laptop Access']||'').includes(a))) return false;
       if (filters.qapLocation.length > 0 && !filters.qapLocation.some(a => (bag['QAP Location']||'').includes(a))) return false;
@@ -606,35 +619,45 @@ export default function App() {
       
       {/* Top Menu Bar */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <h1 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView('database')}>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex items-center justify-between w-full md:w-auto">
+            <h1 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2 cursor-pointer shrink-0" onClick={() => setCurrentView('database')}>
               <Package size={24} className="text-blue-600"/>
               BagDB
             </h1>
-            <div className="hidden md:flex gap-1 bg-slate-100 p-1 rounded-lg">
+            <div className="md:hidden flex items-center gap-4">
               <button 
-                onClick={() => setCurrentView('database')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${currentView === 'database' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                onClick={() => setIsInfoOpen(true)}
+                className="text-red-500 hover:text-red-600 transition-colors p-1.5 rounded-full hover:bg-red-50 bg-red-50/50"
+                title="Abbreviations Info"
               >
-                Database
-              </button>
-              <button 
-                onClick={() => setCurrentView('material')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${currentView === 'material' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-              >
-                Material Aging
-              </button>
-              <button 
-                onClick={() => setCurrentView('custom')}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${currentView === 'custom' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-              >
-                Custom Makers
+                <Info size={20} />
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto w-full md:w-auto no-scrollbar">
+            <button 
+              onClick={() => setCurrentView('database')}
+              className={`shrink-0 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${currentView === 'database' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Database
+            </button>
+            <button 
+              onClick={() => setCurrentView('material')}
+              className={`shrink-0 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${currentView === 'material' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Material Aging
+            </button>
+            <button 
+              onClick={() => setCurrentView('custom')}
+              className={`shrink-0 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${currentView === 'custom' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Custom Makers
+            </button>
+          </div>
+
+          <div className="hidden md:flex items-center gap-4">
             <button 
               onClick={() => setIsInfoOpen(true)}
               className="text-red-500 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50 bg-red-50/50"
@@ -675,7 +698,7 @@ export default function App() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input 
                   type="text" 
-                  placeholder="Search any term across BagDB" 
+                  placeholder="Search anything e.g. Waxed Canvas, Brand Name etc." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
@@ -1016,12 +1039,16 @@ export default function App() {
               Database Abbreviations
             </h4>
 
-            <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700 text-left">
-              <li><strong className="text-slate-900 font-semibold inline-block w-24">QAP</strong> Quick Access Pocket</li>
-              <li><strong className="text-slate-900 font-semibold inline-block w-24">WBP</strong> Water Bottle Pocket</li>
-              <li><strong className="text-slate-900 font-semibold inline-block w-24">Org</strong> Organization (Slots or Pockets)</li>
-              <li><strong className="text-slate-900 font-semibold inline-block w-24">Lash points</strong> External points to tie down gear</li>
-            </ul>
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-slate-700 text-left pl-1">
+              <strong className="text-slate-900 font-semibold">QAP</strong>
+              <span>Quick Access Pocket</span>
+              <strong className="text-slate-900 font-semibold">WBP</strong>
+              <span>Water Bottle Pocket</span>
+              <strong className="text-slate-900 font-semibold">Org</strong>
+              <span>Organization (Slots or Pockets)</span>
+              <strong className="text-slate-900 font-semibold">Lash points</strong>
+              <span>External points to tie down gear</span>
+            </div>
 
           </div>
         </div>
