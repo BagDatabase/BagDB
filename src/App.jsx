@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, Filter, Info, Upload, X, Check, ChevronDown, Package, Shield, ExternalLink, Menu, SlidersHorizontal, Moon, Sun, Link as LinkIcon } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react'; // <-- Add it right here!
 
 // --- IMPORTANT: Vercel Analytics ---
 // The following line is commented out because third-party packages like 
 // @vercel/analytics cannot be installed or compiled in this live preview environment. 
 // When you deploy this code to Vercel locally, you can safely uncomment this line 
 // and the <Analytics /> tag at the very bottom of the file!
-import { Analytics } from '@vercel/analytics/react';
+// import { Analytics } from '@vercel/analytics/react';
 
 // --- CSV Parser Utility ---
 function parseCSV(text) {
@@ -73,90 +74,115 @@ const defaultFilters = {
 };
 
 // --- UI Components ---
-const RangeFilter = ({ label, min, max, value, onChange, unit = "" }) => (
-  <div className="mb-4">
-    <div className="flex justify-between items-center mb-1">
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-200 text-left">{label}</label>
-      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-        {value.min === '' ? min : value.min} - {value.max === '' ? max : value.max} {unit}
-      </span>
-    </div>
-    <div className="flex gap-2 items-center">
-      <input
-        type="number"
-        min={min}
-        max={value.max === '' ? max : value.max}
-        value={value.min}
-        onChange={(e) => {
-          const val = e.target.value;
-          onChange({ ...value, min: val === '' ? '' : Number(val) });
-        }}
-        className="w-full px-2 py-1 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500"
-        placeholder="Min"
-      />
-      <span className="text-slate-400 dark:text-slate-500">-</span>
-      <input
-        type="number"
-        min={value.min === '' ? min : value.min}
-        max={max}
-        value={value.max}
-        onChange={(e) => {
-          const val = e.target.value;
-          onChange({ ...value, max: val === '' ? '' : Number(val) });
-        }}
-        className="w-full px-2 py-1 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500"
-        placeholder="Max"
-      />
-    </div>
-  </div>
-);
+const RangeFilter = ({ label, min, max, value, onChange, unit = "" }) => {
+  const isActive = (value.min !== '' && value.min !== min) || (value.max !== '' && value.max !== max);
+  const inputClass = `w-full px-2 py-1 border rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500 transition-colors ${
+    isActive 
+      ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100' 
+      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100'
+  }`;
 
-const CheckboxGroup = ({ label, options, selected, onChange }) => (
-  <div className="mb-4">
-    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 block mb-2 text-left w-full">{label}</label>
-    <div className="space-y-1 max-h-40 overflow-y-auto p-1">
-      {options.map((opt) => (
-        <label key={opt} className="flex items-center gap-2 cursor-pointer group">
-          <input
-            type="checkbox"
-            checked={selected.includes(opt)}
-            onChange={(e) => {
-              if (e.target.checked) onChange([...selected, opt]);
-              else onChange(selected.filter((item) => item !== opt));
-            }}
-            className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white">{opt || 'Unknown'}</span>
-        </label>
-      ))}
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-1">
+        <label className={`text-sm font-medium text-left ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>{label}</label>
+        <span className={`text-xs font-mono px-2 py-1 rounded transition-colors ${isActive ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+          {value.min === '' ? min : value.min} - {value.max === '' ? max : value.max} {unit}
+        </span>
+      </div>
+      <div className="flex gap-2 items-center">
+        <input
+          type="number"
+          min={min}
+          max={value.max === '' ? max : value.max}
+          value={value.min}
+          onChange={(e) => {
+            const val = e.target.value;
+            onChange({ ...value, min: val === '' ? '' : Number(val) });
+          }}
+          className={inputClass}
+          placeholder="Min"
+        />
+        <span className="text-slate-400 dark:text-slate-500">-</span>
+        <input
+          type="number"
+          min={value.min === '' ? min : value.min}
+          max={max}
+          value={value.max}
+          onChange={(e) => {
+            const val = e.target.value;
+            onChange({ ...value, max: val === '' ? '' : Number(val) });
+          }}
+          className={inputClass}
+          placeholder="Max"
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
-const RadioGroup = ({ label, options, selected, onChange }) => (
-  <div className="mb-4">
-    <label className="text-sm font-medium text-slate-700 dark:text-slate-200 block mb-2 text-left w-full">{label}</label>
-    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          onClick={() => onChange(opt)}
-          className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${
-            selected === opt
-              ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
-          }`}
-        >
-          {opt}
-        </button>
-      ))}
+const CheckboxGroup = ({ label, options, selected, onChange }) => {
+  const isActive = selected.length > 0;
+  return (
+    <div className="mb-4">
+      <label className={`text-sm font-medium block mb-2 text-left w-full ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>{label}</label>
+      <div className={`space-y-1 max-h-40 overflow-y-auto p-2 rounded-lg border transition-colors ${isActive ? 'border-blue-200 dark:border-blue-800/50 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent'}`}>
+        {options.map((opt) => {
+          const isSelected = selected.includes(opt);
+          return (
+            <label key={opt} className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => {
+                  if (e.target.checked) onChange([...selected, opt]);
+                  else onChange(selected.filter((item) => item !== opt));
+                }}
+                className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500"
+              />
+              <span className={`text-sm transition-colors ${isSelected ? 'text-blue-700 dark:text-blue-300 font-medium' : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'}`}>{opt || 'Unknown'}</span>
+            </label>
+          )
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+const RadioGroup = ({ label, options, selected, onChange }) => {
+  const isActive = selected !== 'All';
+  return (
+    <div className="mb-4">
+      <label className={`text-sm font-medium block mb-2 text-left w-full ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>{label}</label>
+      <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+        {options.map((opt) => {
+          const isSelected = selected === opt;
+          const isHighlighted = isSelected && opt !== 'All';
+          return (
+            <button
+              key={opt}
+              onClick={() => onChange(opt)}
+              className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${
+                isHighlighted
+                  ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-100 shadow-sm'
+                  : isSelected 
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              {opt}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  );
+};
 
 const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
+  const isActive = selected.length > 0;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -168,34 +194,41 @@ const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
 
   return (
     <div className="mb-4 relative" ref={ref}>
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-200 block mb-1 text-left w-full">{label}</label>
+      <label className={`text-sm font-medium block mb-1 text-left w-full ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>{label}</label>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex justify-between items-center px-3 py-2 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-left"
+        className={`w-full flex justify-between items-center px-3 py-2 border rounded text-sm text-left transition-colors ${
+          isActive 
+            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100'
+            : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+        }`}
       >
-        <span className="truncate text-slate-600 dark:text-slate-300">
+        <span className="truncate">
           {selected.length === 0 ? "Select options..." : `${selected.length} selected`}
         </span>
-        <ChevronDown size={16} className="text-slate-400 dark:text-slate-500" />
+        <ChevronDown size={16} className={isActive ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"} />
       </button>
       
       {isOpen && (
         <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
           <div className="p-2 space-y-1">
-            {options.map((opt) => (
-              <label key={opt} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-left">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(opt)}
-                  onChange={(e) => {
-                    if (e.target.checked) onChange([...selected, opt]);
-                    else onChange(selected.filter((item) => item !== opt));
-                  }}
-                  className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-slate-700 dark:text-slate-300">{opt || 'Unknown'}</span>
-              </label>
-            ))}
+            {options.map((opt) => {
+              const isSelected = selected.includes(opt);
+              return (
+                <label key={opt} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded cursor-pointer text-left">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                      if (e.target.checked) onChange([...selected, opt]);
+                      else onChange(selected.filter((item) => item !== opt));
+                    }}
+                    className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className={`text-sm ${isSelected ? 'text-blue-700 dark:text-blue-300 font-medium' : 'text-slate-700 dark:text-slate-300'}`}>{opt || 'Unknown'}</span>
+                </label>
+              )
+            })}
           </div>
         </div>
       )}
@@ -220,6 +253,22 @@ export default function App() {
     } catch (e) {}
     return false;
   });
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prevMode) => !prevMode);
+  };
+
+  // Apply dark mode class to HTML root
+  useEffect(() => {
+    try {
+      const root = window.document.documentElement;
+      if (isDarkMode) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    } catch (e) {}
+  }, [isDarkMode]);
 
   // State parsed from URL parameters
   const getParam = (key, defaultVal) => {
@@ -263,17 +312,6 @@ export default function App() {
     } catch (e) {}
     return defaultFilters;
   });
-
-  // Apply dark mode class to HTML root
-  useEffect(() => {
-    try {
-      if (isDarkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } catch (e) {}
-  }, [isDarkMode]);
 
   // Sync state to URL 
   useEffect(() => {
@@ -737,7 +775,7 @@ export default function App() {
               </h1>
               <div className="md:hidden flex items-center gap-3">
                 <button 
-                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  onClick={toggleDarkMode}
                   className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
                   title="Toggle Dark Mode"
                 >
@@ -776,7 +814,7 @@ export default function App() {
 
             <div className="hidden md:flex items-center gap-4">
               <button 
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={toggleDarkMode}
                 className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
                 title="Toggle Dark Mode"
               >
@@ -867,70 +905,162 @@ export default function App() {
               
               <div className="flex-1 overflow-y-auto p-4 space-y-6 text-slate-900 dark:text-white">
                 
-                {/* Text Searches */}
-                <div>
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200 block mb-1 text-left w-full">Brand & Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. AER, Evergoods, Goruck"
-                    value={filters.brandName}
-                    onChange={(e) => setFilters({...filters, brandName: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500"
-                  />
+                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 p-2.5 rounded-md border border-blue-100 dark:border-blue-800/50 flex items-center gap-2">
+                  <Info size={14} className="shrink-0" />
+                  Active filters will be highlighted in blue.
                 </div>
 
-                {activeTab === 'Backpack' && (
-                  <>
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
-                      <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
-                      <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                {/* Text Searches */}
+              <div>
+                <label className={`text-sm font-medium block mb-1 text-left w-full ${filters.brandName ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>Brand & Name</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. AER, Evergoods, Goruck"
+                  value={filters.brandName}
+                  onChange={(e) => setFilters({...filters, brandName: e.target.value})}
+                  className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500 transition-colors ${
+                    filters.brandName ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100'
+                  }`}
+                />
+              </div>
+
+              {activeTab === 'Backpack' && (
+                <>
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
+                    <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
+                    <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
+                    <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
+                    <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div>
+                      <label className={`text-sm font-medium block mb-1 text-left w-full ${filters.material ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>Material</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Cordura, Nylon"
+                        value={filters.material}
+                        onChange={(e) => setFilters({...filters, material: e.target.value})}
+                        className={`w-full px-3 py-2 border rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500 transition-colors ${
+                          filters.material ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100'
+                        }`}
+                      />
                     </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Max. Laptop Size" min={0} max={20} value={filters.laptopSize} onChange={(v) => setFilters({...filters, laptopSize: v})} unit="in" />
+                    <MultiSelectDropdown label="Laptop Access" options={options.laptopAccess} selected={filters.laptopAccess} onChange={(v) => setFilters({...filters, laptopAccess: v})} />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <MultiSelectDropdown label="Bag Style Opening" options={options.openingStyle} selected={filters.openingStyle} onChange={(v) => setFilters({...filters, openingStyle: v})} />
+                    <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
+                    <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
+                    <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
+                    <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RadioGroup label="Luggage Pass Through" options={['All', 'Yes', 'No']} selected={filters.luggagePass} onChange={(v) => setFilters({...filters, luggagePass: v})} />
+                    <RadioGroup label="Compression Straps" options={['All', 'Yes', 'No']} selected={filters.compression} onChange={(v) => setFilters({...filters, compression: v})} />
+                    <RadioGroup label="Load Lifters" options={['All', 'Yes', 'No']} selected={filters.loadLifters} onChange={(v) => setFilters({...filters, loadLifters: v})} />
+                    <RadioGroup label="Sternum Strap" options={['All', 'Yes', 'No']} selected={filters.sternum} onChange={(v) => setFilters({...filters, sternum: v})} />
+                    <RadioGroup label="Expandable" options={['All', 'Yes', 'No']} selected={filters.expandable} onChange={(v) => setFilters({...filters, expandable: v})} />
+                    <RadioGroup label="Packable" options={['All', 'Yes', 'No']} selected={filters.packable} onChange={(v) => setFilters({...filters, packable: v})} />
+                    <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
+                    <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'Sling' && (
+                <>
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
+                    <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
+                    <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
+                    <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
+                    <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div>
+                      <label className={`text-sm font-medium block mb-1 text-left w-full ${filters.material ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>Material</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Cordura, Nylon"
+                        value={filters.material}
+                        onChange={(e) => setFilters({...filters, material: e.target.value})}
+                        className={`w-full px-3 py-2 border rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500 transition-colors ${
+                          filters.material ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Max. Device Size" min={0} max={20} value={filters.laptopSize} onChange={(v) => setFilters({...filters, laptopSize: v})} unit="in" />
+                    <MultiSelectDropdown label="Device Access" options={options.laptopAccess} selected={filters.laptopAccess} onChange={(v) => setFilters({...filters, laptopAccess: v})} />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
+                    <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
+                    <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
+                    <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RadioGroup label="Compression Straps" options={['All', 'Yes', 'No']} selected={filters.compression} onChange={(v) => setFilters({...filters, compression: v})} />
+                    <RadioGroup label="Expandable" options={['All', 'Yes', 'No']} selected={filters.expandable} onChange={(v) => setFilters({...filters, expandable: v})} />
+                    <RadioGroup label="Packable" options={['All', 'Yes', 'No']} selected={filters.packable} onChange={(v) => setFilters({...filters, packable: v})} />
+                    <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
+                    <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'Pouch' && (
+                <>
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
+                    <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
+                    <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                    <RangeFilter label="Organisation Pockets/Slots" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
+                    <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
+                    <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
                     
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
-                      <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
-                      <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
+                    <div className="mt-4">
+                      <label className={`text-sm font-medium block mb-1 text-left w-full ${filters.material ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>Material</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Cordura, Nylon"
+                        value={filters.material}
+                        onChange={(e) => setFilters({...filters, material: e.target.value})}
+                        className={`w-full px-3 py-2 border rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500 transition-colors ${
+                          filters.material ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100'
+                        }`}
+                      />
                     </div>
-                    
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <div>
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-200 block mb-1 text-left w-full">Material</label>
-                        <input 
-                          type="text" 
-                          placeholder="e.g. Cordura, Nylon"
-                          value={filters.material}
-                          onChange={(e) => setFilters({...filters, material: e.target.value})}
-                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 dark:placeholder-slate-500"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <RangeFilter label="Max. Laptop Size" min={0} max={20} value={filters.laptopSize} onChange={(v) => setFilters({...filters, laptopSize: v})} unit="in" />
-                      <MultiSelectDropdown label="Laptop Access" options={options.laptopAccess} selected={filters.laptopAccess} onChange={(v) => setFilters({...filters, laptopAccess: v})} />
-                    </div>
-                    
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <MultiSelectDropdown label="Bag Style Opening" options={options.openingStyle} selected={filters.openingStyle} onChange={(v) => setFilters({...filters, openingStyle: v})} />
-                      <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
-                      <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
-                      <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
-                      <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
-                    </div>
-                    
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <RadioGroup label="Luggage Pass Through" options={['All', 'Yes', 'No']} selected={filters.luggagePass} onChange={(v) => setFilters({...filters, luggagePass: v})} />
-                      <RadioGroup label="Compression Straps" options={['All', 'Yes', 'No']} selected={filters.compression} onChange={(v) => setFilters({...filters, compression: v})} />
-                      <RadioGroup label="Load Lifters" options={['All', 'Yes', 'No']} selected={filters.loadLifters} onChange={(v) => setFilters({...filters, loadLifters: v})} />
-                      <RadioGroup label="Sternum Strap" options={['All', 'Yes', 'No']} selected={filters.sternum} onChange={(v) => setFilters({...filters, sternum: v})} />
-                      <RadioGroup label="Expandable" options={['All', 'Yes', 'No']} selected={filters.expandable} onChange={(v) => setFilters({...filters, expandable: v})} />
-                      <RadioGroup label="Packable" options={['All', 'Yes', 'No']} selected={filters.packable} onChange={(v) => setFilters({...filters, packable: v})} />
-                      <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
-                      <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
-                    </div>
-                  </>
-                )}
+                    <MultiSelectDropdown label="Warranty" options={options.warranty} selected={filters.warranty} onChange={(v) => setFilters({...filters, warranty: v})} />
+                    <CheckboxGroup label="Origin of Company" options={options.origin} selected={filters.origin} onChange={(v) => setFilters({...filters, origin: v})} />
+                  </div>
+                </>
+              )}
 
                 {activeTab === 'Sling' && (
                   <>
@@ -1185,10 +1315,8 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* Uncomment the following line when deploying to Vercel */}
+  {/* ADD THE ANALYTICS TAG RIGHT HERE: */}
       <Analytics />
     </div>
-  </div>
   );
 }
