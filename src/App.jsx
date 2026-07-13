@@ -493,6 +493,25 @@ export default function App() {
     });
   }, [data, activeTab, searchQuery, filters]);
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    Object.keys(filters).forEach(key => {
+      const val = filters[key];
+      const def = defaultFilters[key];
+      
+      if (typeof val === 'string') {
+        if (val !== def) count++;
+      } else if (Array.isArray(val)) {
+        if (val.length > 0) count++;
+      } else if (typeof val === 'object' && val !== null) {
+        if ((val.min !== '' && Number(val.min) !== def.min) || (val.max !== '' && Number(val.max) !== def.max)) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }, [filters]);
+
   const resetFilters = () => {
     setFilters(defaultFilters);
   };
@@ -839,7 +858,8 @@ export default function App() {
                   className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap shrink-0"
                 >
                   <Filter size={18} />
-                  <span className="hidden sm:inline">Filters</span>
+                  <span className="hidden sm:inline">Filters ({activeFilterCount})</span>
+                  <span className="sm:hidden">({activeFilterCount})</span>
                 </button>
               </div>
             </div>
