@@ -316,7 +316,7 @@ export default function App() {
     }
   }, [currentView, activeTab, searchQuery, filters]);
 
-  // Fetch actual CSV from the public folder
+// Fetch actual CSV from the public folder
   useEffect(() => {
     fetch('/BagDB Data.csv')
       .then(response => response.text())
@@ -329,6 +329,7 @@ export default function App() {
         setData(parseCSV(initialCsvString)); // Fallback if it fails
       });
   }, []);
+
 
   const handleCopyLink = () => {
     try {
@@ -391,7 +392,6 @@ export default function App() {
       laptopAccess: getUnique('Laptop Access'),
       qapLocation: getUnique('QAP Location'),
       openingStyle: getUnique('Bag Style Opening'),
-      luggagePass: getUnique('Luggage Pass Through / Trolley Sleeve'),
       warranty: sortedWarranty,
       origin: getUnique('Origin of Company')
     };
@@ -481,7 +481,7 @@ export default function App() {
       if (filters.openingStyle.length > 0 && !filters.openingStyle.some(a => (bag['Bag Style Opening']||'').includes(a))) return false;
       if (filters.warranty.length > 0 && !filters.warranty.some(a => (bag['Warranty']||'').includes(a))) return false;
       if (filters.origin.length > 0 && !filters.origin.some(a => (bag['Origin of Company']||'').includes(a))) return false;
-      if (filters.luggagePass.length > 0 && !filters.luggagePass.some(a => (bag['Luggage Pass Through / Trolley Sleeve']||'').includes(a))) return false;
+      if (filters.luggagePass.length > 0 && !filters.luggagePass.some(a => (bag['Luggage Pass Through / Trolley Sleeve']||'').toLowerCase().includes(a.toLowerCase()))) return false;
 
       if (!checkYesNo(bag['Compression Straps'], filters.compression)) return false;
       if (!checkYesNo(bag['Load Lifters'], filters.loadLifters)) return false;
@@ -911,7 +911,47 @@ export default function App() {
               {activeTab === 'Backpack' && (
                 <>
                   <div className="pt-4 border-t border-slate-100">
-                    <MultiSelectDropdown label="Luggage Pass Through" options={options.luggagePass} selected={filters.luggagePass} onChange={(v) => setFilters({...filters, luggagePass: v})} />
+                    <RangeFilter label="Price in USD" min={0} max={1000} value={filters.price} onChange={(v) => setFilters({...filters, price: v})} unit="$" />
+                    <RangeFilter label="Volume in litres" min={0} max={100} value={filters.volume} onChange={(v) => setFilters({...filters, volume: v})} unit="L" />
+                    <RangeFilter label="Weight in lbs" min={0} max={15} value={filters.weight} onChange={(v) => setFilters({...filters, weight: v})} unit="lbs" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Height in inches" min={0} max={30} value={filters.height} onChange={(v) => setFilters({...filters, height: v})} unit="in" />
+                    <RangeFilter label="Width in inches" min={0} max={20} value={filters.width} onChange={(v) => setFilters({...filters, width: v})} unit="in" />
+                    <RangeFilter label="Depth in inches" min={0} max={15} value={filters.depth} onChange={(v) => setFilters({...filters, depth: v})} unit="in" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <div>
+                      <label className={`text-sm font-medium block mb-1 text-left w-full ${filters.material ? 'text-blue-700' : 'text-slate-700'}`}>Material</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Cordura, Nylon"
+                        value={filters.material}
+                        onChange={(e) => setFilters({...filters, material: e.target.value})}
+                        className={`w-full px-3 py-2 border rounded-md text-sm mb-4 focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-400 transition-colors ${
+                          filters.material ? 'bg-blue-50 border-blue-300 text-blue-900' : 'bg-white border-slate-300 text-slate-900'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <RangeFilter label="Max. Laptop Size" min={0} max={20} value={filters.laptopSize} onChange={(v) => setFilters({...filters, laptopSize: v})} unit="in" />
+                    <MultiSelectDropdown label="Laptop Access" options={options.laptopAccess} selected={filters.laptopAccess} onChange={(v) => setFilters({...filters, laptopAccess: v})} />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <MultiSelectDropdown label="Bag Style Opening" options={options.openingStyle} selected={filters.openingStyle} onChange={(v) => setFilters({...filters, openingStyle: v})} />
+                    <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
+                    <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
+                    <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
+                    <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
+                  </div>
+                  
+                  <div className="pt-4 border-t border-slate-100">
+                    <MultiSelectDropdown label="Luggage Pass Through" options={['Horizontal', 'Vertical', 'No']} selected={filters.luggagePass} onChange={(v) => setFilters({...filters, luggagePass: v})} />
                     <RadioGroup label="Compression Straps" options={['All', 'Yes', 'No']} selected={filters.compression} onChange={(v) => setFilters({...filters, compression: v})} />
                     <RadioGroup label="Load Lifters" options={['All', 'Yes', 'No']} selected={filters.loadLifters} onChange={(v) => setFilters({...filters, loadLifters: v})} />
                     <RadioGroup label="Sternum Strap" options={['All', 'Yes', 'No']} selected={filters.sternum} onChange={(v) => setFilters({...filters, sternum: v})} />
