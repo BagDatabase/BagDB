@@ -67,7 +67,7 @@ const defaultFilters = {
   brandName: '', volume: { min: 0, max: 100 }, price: { min: 0, max: 1000 },
   laptopSize: { min: 0, max: 20 }, laptopAccess: [], qap: { min: 0, max: 10 },
   qapLocation: [], wbp: { min: 0, max: 5 }, luggagePass: [], openingStyle: [],
-  orgSlots: { min: 0, max: 20 }, compression: 'All', loadLifters: 'All', sternum: 'All',
+  orgSlots: 'All', compression: 'All', loadLifters: 'All', sternum: 'All',
   material: '', warranty: [], weight: { min: 0, max: 15 }, height: { min: 0, max: 30 },
   width: { min: 0, max: 20 }, depth: { min: 0, max: 15 }, expandable: 'All', packable: 'All', origin: []
 };
@@ -461,9 +461,6 @@ export default function App() {
       const wbpNum = getNum(bag['Water Bottle Pockets (#)']);
       if (!checkRange(wbpNum, filters.wbp)) return false;
 
-      const orgSlots = getNum(bag['Org Slots/Pockets']);
-      if (!checkRange(orgSlots, filters.orgSlots)) return false;
-
       const weight = getNum(bag['Weight (lbs)']);
       if (!checkRange(weight, filters.weight)) return false;
 
@@ -483,6 +480,7 @@ export default function App() {
       if (filters.origin.length > 0 && !filters.origin.some(a => (bag['Origin of Company']||'').includes(a))) return false;
       if (filters.luggagePass.length > 0 && !filters.luggagePass.some(a => (bag['Luggage Pass Through / Trolley Sleeve']||'').toLowerCase().includes(a.toLowerCase()))) return false;
 
+      if (!checkYesNo(bag['Org Slots/Pockets'], filters.orgSlots)) return false;
       if (!checkYesNo(bag['Compression Straps'], filters.compression)) return false;
       if (!checkYesNo(bag['Load Lifters'], filters.loadLifters)) return false;
       if (!checkYesNo(bag['Sternum Strap'], filters.sternum)) return false;
@@ -947,7 +945,7 @@ export default function App() {
                     <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
                     <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
                     <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
-                    <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
+                    <RadioGroup label="Org Slots/Pockets" options={['All', 'Yes', 'No']} selected={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} />
                   </div>
                   
                   <div className="pt-4 border-t border-slate-100">
@@ -1000,7 +998,7 @@ export default function App() {
                   <div className="pt-4 border-t border-slate-100">
                     <RangeFilter label="Quick Access Pockets" min={0} max={10} value={filters.qap} onChange={(v) => setFilters({...filters, qap: v})} unit="#" />
                     <CheckboxGroup label="QAP Location" options={options.qapLocation} selected={filters.qapLocation} onChange={(v) => setFilters({...filters, qapLocation: v})} />
-                    <RangeFilter label="Org Slots/Pockets" min={0} max={20} value={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} unit="#" />
+                    <RadioGroup label="Org Slots/Pockets" options={['All', 'Yes', 'No']} selected={filters.orgSlots} onChange={(v) => setFilters({...filters, orgSlots: v})} />
                     <RangeFilter label="Water Bottle Pockets" min={0} max={5} value={filters.wbp} onChange={(v) => setFilters({...filters, wbp: v})} unit="#" />
                   </div>
                   
